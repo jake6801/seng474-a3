@@ -1,18 +1,12 @@
 # Lloyds algorithm (k-means) with uniform random initialization 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import random
 
 # load dataset1 into np 2d array
 dataset1 = np.loadtxt('dataset1.csv', delimiter=",")
-
-#? initialize k
-k = 5
-
-# uniform random initialization of the centroids 
-random_initializations = random.sample(range(len(dataset1)), k)
-initial_cluster_centers = dataset1[random_initializations]
+dataset2 = np.loadtxt('dataset2.csv', delimiter=",")
 
 # assign data points to the nearest cluster using euclidean distance     
 def assign_dp_to_cluster(dataset, centroids):
@@ -54,6 +48,15 @@ def check_convergence(prev, curr):
         curr_clusters[key] = sorted(map(tuple, curr[key]))
     return prev_clusters == curr_clusters
 
+def cost(clusters):
+    total = 0
+    for center, dps in clusters.items():
+        center = np.array(center)
+        for dp in dps:
+            total += np.sum((dp-center)**2)
+    return total
+
+
 
 
 # check for convergence 
@@ -61,7 +64,7 @@ def check_convergence(prev, curr):
 
 def Lloyds_alg(dataset, k):
     # uniform random initialization of cluster centers 
-    random_initializations = random.sample(range(len(dataset1)), k)
+    random_initializations = random.sample(range(len(dataset)), k)
     initial_cluster_centers = dataset[random_initializations]
     print(f"init: {initial_cluster_centers}")
 
@@ -90,8 +93,90 @@ def Lloyds_alg(dataset, k):
     print("converged")
     return curr_centers, curr
 
-            
+#? initialize k
+# k_vals = range(2,16)
+k_vals = [4]
 
-centers, clusters = Lloyds_alg(dataset1, k)
-print(f"cluster at center {centers[0]}\n{clusters[tuple(centers[0])]}")
-       
+#* DATASET1
+lowest_costs = []
+
+for k in k_vals:
+    lowest_cost = np.inf
+    for i in range(5):
+        centers, clusters = Lloyds_alg(dataset1, k)
+        cluster_cost = cost(clusters)
+        if cluster_cost < lowest_cost:
+            lowest_cost = cluster_cost
+    lowest_costs.append(lowest_cost)
+
+# cost vs k plot 
+plt.plot(k_vals, lowest_costs, marker='o')
+plt.xlabel("Number of Clusters K")
+plt.ylabel("Cost")
+plt.show()
+
+# centers, clusters = Lloyds_alg(dataset2, k)
+# print(f"cluster at center {centers[0]}\n{clusters[tuple(centers[0])]}")
+
+
+print("Starting plot")
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(8, 6))
+
+# Assign unique colors to clusters
+colors = plt.cm.get_cmap('tab10', len(clusters))  # 'tab10' supports up to 10 colors
+
+# Plot each cluster with a different color
+for i, (centroid, points) in enumerate(clusters.items()):
+    points = np.array(points)  # Convert list to numpy array
+    plt.scatter(points[:, 0], points[:, 1], s=20, color=colors(i), label=f'Cluster {i+1}')
+
+# Plot cluster centers
+plt.scatter(centers[:, 0], centers[:, 1], s=200, marker='X', c='red', label='Centroids')
+
+plt.xlabel("Feature 1")
+plt.ylabel("Feature 2")
+plt.title("K-Means Clustering with Lloyd's Algorithm")
+plt.legend()
+plt.show()
+
+
+
+#* DATASET2
+k_vals = [7]
+lowest_costs = []
+
+for k in k_vals:
+    lowest_cost = np.inf
+    for i in range(5):
+        centers, clusters = Lloyds_alg(dataset2, k)
+        cluster_cost = cost(clusters)
+        if cluster_cost < lowest_cost:
+            lowest_cost = cluster_cost
+    lowest_costs.append(lowest_cost)
+
+# cost vs k plot 
+plt.plot(k_vals, lowest_costs, marker='o')
+plt.xlabel("Number of Clusters K")
+plt.ylabel("Cost")
+plt.show()
+
+centers, clusters = Lloyds_alg(dataset2, 15)
+
+fig = plt.figure(figsize=(10,7))
+ax = fig.add_subplot(111, projection='3d')
+colours = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'orange', 'purple', 'pink']
+
+for i, (center, dps) in enumerate(clusters.items()):
+    dps = np.array(dps)
+    colour = colours[i % len(colours)]
+    ax.scatter(dps[:, 0], dps[:, 1], dps[:, 2], c=colour, marker='o', alpha=0.6)    
+    center = np.array(center)
+    ax.scatter(center[0], center[1], center[2], c=colour, marker='X', s=200, edgecolors='k')
+
+ax.set_xlabel("X")
+ax.set_ylabel("Y")
+ax.set_zlabel("Z")
+ax.set_title("3D K-Means Clustering Visualization")
+plt.show()
